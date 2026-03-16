@@ -7,6 +7,7 @@ import dev.slne.surf.surfapi.core.api.util.logger
 import dev.slne.surf.surfapi.core.api.util.requiredService
 import dev.slne.surf.surfapi.standalone.SurfApiStandaloneBootstrap
 import kotlinx.coroutines.*
+import java.nio.file.Path
 import java.util.*
 
 private val log = logger()
@@ -25,7 +26,15 @@ object MicroserviceLauncher {
         SurfApiStandaloneBootstrap.bootstrap()
         SurfApiStandaloneBootstrap.enable()
 
-        microservice.bootstrap(args.toList())
+        val dataPath = Path.of(
+            microservice::class.java
+                .protectionDomain
+                .codeSource
+                .location
+                .toURI()
+        ).parent
+
+        microservice.bootstrap(args.toList(), dataPath)
 
         scope.launch(Dispatchers.IO + CoroutineName("MicroserviceCommandListener")) {
             val scanner = Scanner(System.`in`)
