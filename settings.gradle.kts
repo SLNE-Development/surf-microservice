@@ -4,6 +4,7 @@ pluginManagement {
         mavenLocal()
         maven("https://repo.slne.dev/repository/maven-public/") { name = "maven-public" }
     }
+
 }
 
 plugins {
@@ -31,4 +32,3 @@ include("surf-microservice-microservice")
 
 // Gradle Plugin
 include("surf-microservice-gradle-plugin")
-include("surf-microservice-client:surf-microservice-client-common")
