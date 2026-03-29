@@ -1,13 +1,28 @@
 package dev.slne.surf.microservice.gradle.plugin
 
 import dev.slne.surf.microservice.gradle.generated.Constants
+import dev.slne.surf.microservice.gradle.plugin.task.GenerateDockerfileTask
+import dev.slne.surf.microservice.gradle.plugin.task.GenerateWorkflowTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.register
 
 abstract class MicroservicePlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         val extension = extensions.create<MicroserviceExtension>("surfMicroservice")
+
+        tasks.register<GenerateDockerfileTask>("generateDockerfile") {
+            baseImage.convention("ghcr.io/graalvm/jdk-community:25")
+            port.convention(8080)
+            jvmArgs.convention(emptyList())
+            outputFile.convention(layout.projectDirectory.file("Dockerfile"))
+        }
+
+        tasks.register<GenerateWorkflowTask>("generateWorkflow") {
+            moduleRegex.convention("")
+            outputFile.convention(layout.projectDirectory.file(".github/workflows/publish.yml"))
+        }
 
         afterEvaluate {
             extension.module.orNull?.let { moduleDependency ->
