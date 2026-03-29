@@ -11,6 +11,12 @@ abstract class GenerateDockerWorkflowTask : DefaultTask() {
     @get:Input
     abstract val registryUrl: Property<String>
 
+    @get:Input
+    abstract val usernameSecret: Property<String>
+
+    @get:Input
+    abstract val passwordSecret: Property<String>
+
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
 
@@ -22,6 +28,8 @@ abstract class GenerateDockerWorkflowTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val registry = registryUrl.get()
+        val username = usernameSecret.get()
+        val password = passwordSecret.get()
 
         val workflow = """
 name: Publish Docker Image
@@ -85,8 +93,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: $registry
-          username: ${'$'}{{ secrets.SLNE_DOCKER_REPO_USERNAME }}
-          password: ${'$'}{{ secrets.SLNE_DOCKER_REPO_PASSWORD }}
+          username: ${'$'}{{ secrets.$username }}
+          password: ${'$'}{{ secrets.$password }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

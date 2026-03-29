@@ -42,6 +42,8 @@ abstract class MicroservicePlugin : Plugin<Project> {
 
         tasks.register<GenerateDockerWorkflowTask>("generateDockerWorkflow") {
             registryUrl.convention(dockerExtension.repository.map { it.registryUrl })
+            usernameSecret.convention(dockerExtension.repository.map { it.usernameSecret })
+            passwordSecret.convention(dockerExtension.repository.map { it.passwordSecret })
             outputFile.convention(layout.projectDirectory.file(".github/workflows/docker.yml"))
         }
 
