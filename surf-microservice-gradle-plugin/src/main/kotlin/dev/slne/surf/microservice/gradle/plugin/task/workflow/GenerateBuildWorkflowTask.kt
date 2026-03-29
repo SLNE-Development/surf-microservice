@@ -1,4 +1,4 @@
-package dev.slne.surf.microservice.gradle.plugin.task
+package dev.slne.surf.microservice.gradle.plugin.task.workflow
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
@@ -7,7 +7,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
-abstract class GenerateWorkflowTask : DefaultTask() {
+abstract class GenerateBuildWorkflowTask : DefaultTask() {
     @get:Input
     abstract val moduleRegex: Property<String>
 
@@ -16,7 +16,7 @@ abstract class GenerateWorkflowTask : DefaultTask() {
 
     init {
         group = "microservice"
-        description = "Generates a GitHub Actions workflow for CI/CD with Docker"
+        description = "Generates a GitHub Actions workflow for building JARs and publishing to Maven"
     }
 
     @TaskAction
@@ -54,7 +54,7 @@ abstract class GenerateWorkflowTask : DefaultTask() {
         }
 
         val workflow = """
-name: Publish to Maven & Create GitHub Release
+name: Build & Publish
 
 on:
   push:
@@ -70,7 +70,7 @@ env:
   DEFAULT_BRANCH: ${'$'}{{ github.event.repository.default_branch }}$moduleRegexEnv
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -124,46 +124,17 @@ jobs:
       - name: Determine release flags
         run: |
           CURRENT_BRANCH=${'$'}{GITHUB_REF#refs/heads/}
-          # prerelease only for snapshots
           if [ "${'$'}{SNAPSHOT_FLAG}" = "true" ]; then
             echo "PRERELEASE=true" >> ${'$'}GITHUB_ENV
           else
             echo "PRERELEASE=false" >> ${'$'}GITHUB_ENV
           fi
-          # make_latest false for snapshots or non-default branches
           if [ "${'$'}{SNAPSHOT_FLAG}" = "true" ] || [ "${'$'}{CURRENT_BRANCH}" != "${'$'}{DEFAULT_BRANCH}" ]; then
             echo "MAKE_LATEST=false" >> ${'$'}GITHUB_ENV
           else
             echo "MAKE_LATEST=true" >> ${'$'}GITHUB_ENV
           fi
 $findJarsStep
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${'$'}{{ github.actor }}
-          password: ${'$'}{{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${'$'}{{ github.repository }}
-          tags: |
-            type=raw,value=${'$'}{{ env.VERSION }}
-            type=raw,value=latest,enable=${'$'}{{ env.MAKE_LATEST == 'true' }}
-
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${'$'}{{ steps.meta.outputs.tags }}
-          labels: ${'$'}{{ steps.meta.outputs.labels }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -179,6 +150,6 @@ $findJarsStep
         val outputPath = outputFile.get().asFile
         outputPath.parentFile.mkdirs()
         outputPath.writeText(workflow)
-        logger.lifecycle("Generated workflow at ${outputPath.absolutePath}")
+        logger.lifecycle("Generated build workflow at ${outputPath.absolutePath}")
     }
 }

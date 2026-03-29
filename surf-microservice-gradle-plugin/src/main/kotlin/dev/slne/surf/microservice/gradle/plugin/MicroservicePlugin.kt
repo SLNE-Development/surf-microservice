@@ -1,8 +1,12 @@
 package dev.slne.surf.microservice.gradle.plugin
 
 import dev.slne.surf.microservice.gradle.generated.Constants
-import dev.slne.surf.microservice.gradle.plugin.task.GenerateDockerfileTask
-import dev.slne.surf.microservice.gradle.plugin.task.GenerateWorkflowTask
+import dev.slne.surf.microservice.gradle.plugin.docker.DockerExtension
+import dev.slne.surf.microservice.gradle.plugin.docker.DockerRepository
+import dev.slne.surf.microservice.gradle.plugin.task.docker.GenerateDockerDockerfileTask
+import dev.slne.surf.microservice.gradle.plugin.task.docker.GeneratePterodactylDockerfileTask
+import dev.slne.surf.microservice.gradle.plugin.task.workflow.GenerateBuildWorkflowTask
+import dev.slne.surf.microservice.gradle.plugin.task.workflow.GenerateDockerWorkflowTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.create
@@ -11,17 +15,34 @@ import org.gradle.kotlin.dsl.register
 abstract class MicroservicePlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         val extension = extensions.create<MicroserviceExtension>("surfMicroservice")
+        val dockerExtension = extensions.create<DockerExtension>("surfMicroserviceDocker")
 
-        tasks.register<GenerateDockerfileTask>("generateDockerfile") {
-            baseImage.convention("ghcr.io/graalvm/jdk-community:25")
-            port.convention(8080)
-            jvmArgs.convention(emptyList())
+        dockerExtension.baseImage.convention("ghcr.io/graalvm/jdk-community:25")
+        dockerExtension.port.convention(8080)
+        dockerExtension.jvmArgs.convention(emptyList())
+        dockerExtension.repository.convention(DockerRepository.PRIVATE)
+
+        tasks.register<GenerateDockerDockerfileTask>("generateDockerDockerfile") {
+            baseImage.convention(dockerExtension.baseImage)
+            port.convention(dockerExtension.port)
+            jvmArgs.convention(dockerExtension.jvmArgs)
             outputFile.convention(layout.projectDirectory.file("Dockerfile"))
         }
 
-        tasks.register<GenerateWorkflowTask>("generateWorkflow") {
+        tasks.register<GeneratePterodactylDockerfileTask>("generatePterodactylDockerfile") {
+            baseImage.convention(dockerExtension.baseImage)
+            jvmArgs.convention(dockerExtension.jvmArgs)
+            outputFile.convention(layout.projectDirectory.file("Dockerfile"))
+        }
+
+        tasks.register<GenerateBuildWorkflowTask>("generateBuildWorkflow") {
             moduleRegex.convention("")
-            outputFile.convention(layout.projectDirectory.file(".github/workflows/publish.yml"))
+            outputFile.convention(layout.projectDirectory.file(".github/workflows/build.yml"))
+        }
+
+        tasks.register<GenerateDockerWorkflowTask>("generateDockerWorkflow") {
+            registryUrl.convention(dockerExtension.repository.map { it.registryUrl })
+            outputFile.convention(layout.projectDirectory.file(".github/workflows/docker.yml"))
         }
 
         afterEvaluate {
