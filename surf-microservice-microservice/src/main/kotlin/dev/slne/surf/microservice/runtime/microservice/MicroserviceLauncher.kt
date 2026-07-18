@@ -6,11 +6,16 @@ import dev.slne.surf.api.standalone.SurfApiStandaloneBootstrap
 import dev.slne.surf.microservice.api.common.util.InternalMicroserviceApi
 import dev.slne.surf.microservice.api.microservice.Microservice
 import dev.slne.surf.microservice.runtime.microservice.command.microserviceCommandManagerImpl
+import dev.slne.surf.microservice.runtime.microservice.redis.RedisService
 import dev.slne.surf.microservice.runtime.microservice.spark.MicroserviceSpark
 import kotlinx.coroutines.*
 import java.util.*
 
 private val log = logger()
+
+private val useRedis by lazy {
+    System.getProperty("surf.microservice.redis", "true").toBoolean()
+}
 
 object MicroserviceLauncher {
     private val scope =
@@ -18,7 +23,11 @@ object MicroserviceLauncher {
             log.atSevere()
                 .withCause(exception)
                 .log("An uncaught exception occurred in the microservice scope on ${context[CoroutineName]}")
+
+            RedisService.recordError(exception)
         })
+
+    val holderName by lazy { microservice.holderName }
 
     suspend fun launch(args: Array<String>) {
         microserviceCommandManagerImpl.initDefaultCommands()
@@ -36,6 +45,13 @@ object MicroserviceLauncher {
 
                 microserviceCommandManagerImpl.handleCommand(line, scope)
             }
+        }
+
+        if (useRedis) {
+            log.atInfo().log("Connecting to Redis...")
+            RedisService.connect()
+        } else {
+            log.atInfo().log("Skipping Redis connection...")
         }
 
         log.atInfo().log("Microservice started successfully. Type 'exit' or 'quit' to shut down.")
@@ -56,6 +72,10 @@ suspend fun main(args: Array<String>) {
         runBlocking {
             MicroserviceLauncher.microservice.disable()
             MicroserviceSpark.onDisable()
+
+            if (useRedis) {
+                RedisService.disconnect()
+            }
 
             SurfApiStandaloneBootstrap.shutdown()
         }

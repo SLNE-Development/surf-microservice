@@ -3,7 +3,7 @@ package dev.slne.surf.microservice.api.microservice
 import dev.slne.surf.microservice.api.common.util.InternalMicroserviceApi
 import java.nio.file.Path
 
-abstract class Microservice {
+abstract class Microservice(val holderName: String) {
     abstract val dataPath: Path
 
     @InternalMicroserviceApi

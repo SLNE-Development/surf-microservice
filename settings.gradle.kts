@@ -31,3 +31,6 @@ include("surf-microservice-microservice")
 
 // Gradle Plugin
 include("surf-microservice-gradle-plugin")
+
+// Test Microservice
+include("surf-microservice-microservice-test")

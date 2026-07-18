@@ -7,6 +7,7 @@ repositories {
 }
 
 dependencies {
+    implementation("dev.slne.surf.redis:surf-redis-standalone:1.6.1")
     api(projects.surfMicroserviceApi.surfMicroserviceApiMicroservice)
     api(projects.surfMicroserviceCore)
     api(libs.spark.standalone.agent) {
