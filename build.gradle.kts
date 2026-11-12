@@ -17,10 +17,21 @@ allprojects {
 }
 
 subprojects {
+    // TODO(v3 release): remove once surf-database-r2dbc 2.4.0 and surf-nats 1.0.0 are published.
+    repositories {
+        mavenLocal {
+            content {
+                includeVersion("dev.slne.surf", "surf-database-r2dbc", "2.4.0")
+                includeGroup("dev.slne.surf.nats")
+            }
+        }
+    }
+
     afterEvaluate {
-        extensions.findByType<KotlinJvmExtension>()?.apply {
+        val usesApi = project.name !in setOf("surf-microservice-processor", "surf-microservice-gradle-plugin")
+        extensions.findByType<KotlinJvmExtension>()?.takeIf { usesApi }?.apply {
             compilerOptions {
-                optIn.add("dev.slne.surf.microservice.api.common.util.InternalMicroserviceApi")
+                optIn.add("dev.slne.surf.microservice.api.InternalMicroserviceApi")
             }
         }
 
